@@ -55,7 +55,10 @@ class _AppState extends State<App> {
             ],
             bottom: TabBar(
               tabs: [
-                Tab(text: "maxLines"),
+                new LayoutBuilder(builder: (context, size) {
+                  print('TabBar size = $size');
+                  return Tab(text: "maxLines abc");
+                }),
                 Tab(text: "minFontSize"),
                 Tab(text: "stepGranularity"),
                 Tab(text: "presetFontSizes"),
@@ -126,11 +129,14 @@ class _DemoScreenState extends State<DemoScreen> with SingleTickerProviderStateM
   void initState() {
     super.initState();
 
+    /// 动画是通过setState更新状态的，没有使用其他的方式。每次添加一个字符。
     _controller = AnimationController(
       duration: Duration(milliseconds: widget.demo.text.length * 80),
       vsync: this,
     );
 
+    /// 注意这里的写法。
+    /// 无论放在什么地方，使用的是number.value
     Animation<int> number = IntTween(
       begin: 0,
       end: widget.demo.text.length,
