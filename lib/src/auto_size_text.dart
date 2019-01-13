@@ -168,17 +168,16 @@ class AutoSizeText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    /// 这里使用LayoutBuilder， 可以获取到当前的size，为下面的计算提供方便。
     return LayoutBuilder(builder: (context, size) {
-      var userScaleFactor =
-          textScaleFactor ?? MediaQuery.textScaleFactorOf(context);
+      print('LayoutBuilder show size = $size');
+      var userScaleFactor = textScaleFactor ?? MediaQuery.textScaleFactorOf(context);
       var effectiveMaxFontSize = (maxFontSize ?? double.infinity);
-      assert(minFontSize <= effectiveMaxFontSize,
-          "MinFontSize has to be smaller or equal than maxFontSize.");
+      assert(minFontSize <= effectiveMaxFontSize, "MinFontSize has to be smaller or equal than maxFontSize.");
 
       DefaultTextStyle defaultTextStyle = DefaultTextStyle.of(context);
       TextStyle effectiveStyle = style;
-      if (style == null || style.inherit)
-        effectiveStyle = defaultTextStyle.style.merge(style);
+      if (style == null || style.inherit) effectiveStyle = defaultTextStyle.style.merge(style);
 
       var effectiveMaxLines = maxLines ?? defaultTextStyle.maxLines;
 
@@ -190,30 +189,33 @@ class AutoSizeText extends StatelessWidget {
       double initialFontSize;
       if (presetFontSizes == null) {
         var current = effectiveStyle.fontSize;
+
+        /// clamp 的作用？
         initialFontSize = current.clamp(minFontSize, effectiveMaxFontSize);
+        print('effectiveStyle.fontSize = ${effectiveStyle.fontSize},initialFontSize = $initialFontSize,');
       } else {
         initialFontSize = presetFontSizes[presetIndex++];
       }
 
       var unitScale = 1 / effectiveStyle.fontSize;
-      var currentScale =
-          (initialFontSize * userScaleFactor) / effectiveStyle.fontSize;
+      var currentScale = (initialFontSize * userScaleFactor) / effectiveStyle.fontSize;
 
-      while (!_checkTextFits(currentScale, effectiveStyle, effectiveMaxLines,
-          size.maxWidth, size.maxHeight)) {
+      while (!_checkTextFits(currentScale, effectiveStyle, effectiveMaxLines, size.maxWidth, size.maxHeight)) {
         if (presetFontSizes == null) {
           var newScale = currentScale - stepGranularity * unitScale;
           var newFontSize = newScale / unitScale;
           if (newFontSize < (minFontSize * userScaleFactor)) break;
           currentScale = newScale;
         } else if (presetIndex < presetFontSizes.length) {
-          currentScale =
-              presetFontSizes[presetIndex++] * userScaleFactor * unitScale;
+          currentScale = presetFontSizes[presetIndex++] * userScaleFactor * unitScale;
         } else {
           break;
         }
       }
 
+      print('effectiveStyle.fontSize = ${effectiveStyle.fontSize}, currentScale = $currentScale');
+
+      /// 这里通过currentScale 进行显示的缩放。
       return _buildText(currentScale, effectiveStyle);
     });
   }
@@ -248,8 +250,9 @@ class AutoSizeText extends StatelessWidget {
     }
   }
 
-  bool _checkTextFits(double scale, TextStyle style, int maxLines,
-      double maxWidth, double maxHeight) {
+  /// 此处给出最大行数，最大宽度，最大高度，来计算最后布局出来的尺寸是否合适。
+  /// 使用TextPainter 来进行计算。
+  bool _checkTextFits(double scale, TextStyle style, int maxLines, double maxWidth, double maxHeight) {
     var span = textSpan ??
         TextSpan(
           text: data,
@@ -267,6 +270,10 @@ class AutoSizeText extends StatelessWidget {
 
     tp.layout(maxWidth: maxWidth);
 
+    /// tp 布局后，有自己的结果输出。这里表示是否适合
+    /// 有最大行数超出和高度超出都不算合适。
+    /// 为什么这里没有宽度限制？
+    /// 因为上面布局的是根据最大宽度，也就是宽度一般会撑满，所有不考虑宽度。
     return !(tp.didExceedMaxLines || tp.height > maxHeight);
   }
 }
